@@ -6,6 +6,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>service</module>
+        <module>web</module>
         <module>inmemory_repository</module>
         <module>domain</module>
     </modules>
