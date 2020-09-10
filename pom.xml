@@ -6,6 +6,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>service</module>
+        <module>inmemory_repository</module>
         <module>domain</module>
     </modules>
     <groupId>org.fantom</groupId>
