@@ -37,6 +37,7 @@ public class WidgetsController<ID> {
     }
 
     @PostMapping()
+    @ResponseStatus(HttpStatus.CREATED)
     WidgetResponseDto<ID> create(@Valid @RequestBody WidgetCreateDto widget) {
         try {
             return WidgetResponseDto.fromWidget(widgetService.create(widget.toServiceDto()));

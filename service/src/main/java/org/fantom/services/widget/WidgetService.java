@@ -26,22 +26,20 @@ public class WidgetService<ID> {
     public Widget<ID> create(WidgetCreateDto widget) throws ArithmeticException {
         Date updatedAt = new Date();
         try {
-            if (widget.zIndex == null) {
-                return this.widgetRepository.runAtomically(repo -> {
+            return this.widgetRepository.runAtomically(repo -> {
+                if (widget.zIndex == null) {
                     var maxZIndex = repo.getMaxZIndex().orElse(Integer.MIN_VALUE);
                     // move new widget to foreground, throws ArithmeticException on overflow
                     // TODO: think about moving preceding widgets down to fit into room
                     int newZIndex = Math.addExact(maxZIndex, 1);
                     // cannot get zIndex conflict here
                     return repo.add(new org.fantom.repositories.widget.dto.WidgetCreateDto(widget.x, widget.y, newZIndex, widget.width, widget.height, updatedAt));
-                });
-            } else {
-                return widgetRepository.runAtomically(repo -> {
+                } else {
                     repo.shiftUpwards(widget.zIndex);
                     // cannot get zIndex conflict here
                     return repo.add(widget.toRepoDto(updatedAt));
-                });
-            }
+                }
+            });
         } catch (ZIndexConflictException e) {
             throw new RuntimeException(e);
         }
