@@ -65,4 +65,8 @@ public class WidgetService<ID> {
     public Stream<Widget<ID>> getAll() {
         return widgetRepository.getAll();
     }
+
+    public void clearAll() {
+        widgetRepository.deleteAll();
+    }
 }

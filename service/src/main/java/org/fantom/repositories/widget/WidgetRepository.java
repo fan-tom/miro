@@ -68,6 +68,11 @@ public interface WidgetRepository<ID> {
      */
     boolean deleteById(ID id);
 
+    /** Delete all widgets
+     *
+     */
+    void deleteAll();
+
     /**
      * Get all widgets, sorted by zIndex asc
      * @return stream over all widgets

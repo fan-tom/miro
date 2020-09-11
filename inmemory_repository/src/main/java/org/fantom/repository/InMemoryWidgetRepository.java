@@ -138,6 +138,12 @@ public class InMemoryWidgetRepository<ID> implements WidgetRepository<ID> {
         }
 
         @Override
+        public void deleteAll() {
+            widgetsByZIndex.clear();
+            widgetsById.clear();
+        }
+
+        @Override
         public Stream<Widget<ID>> getAll() {
             return widgetsByZIndex.values().stream().map(WidgetDao::toWidget);
         }
@@ -260,6 +266,13 @@ public class InMemoryWidgetRepository<ID> implements WidgetRepository<ID> {
     public boolean deleteById(ID id) {
         try(var locked = rwLock.writeLock()) {
             return internal.deleteById(id);
+        }
+    }
+
+    @Override
+    public void deleteAll() {
+        try (var locked = rwLock.writeLock()) {
+            internal.deleteAll();
         }
     }
 
