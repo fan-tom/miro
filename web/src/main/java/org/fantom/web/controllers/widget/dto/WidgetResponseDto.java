@@ -1,5 +1,7 @@
 package org.fantom.web.controllers.widget.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.util.StdDateFormat;
 import org.fantom.domain.Widget;
 
 import java.util.Date;
@@ -11,6 +13,7 @@ public class WidgetResponseDto<ID> {
     public final int zIndex;
     public final int width;
     public final int height;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = StdDateFormat.DATE_FORMAT_STR_ISO8601)
     public final Date updatedAt;
 
     public WidgetResponseDto(
