@@ -37,9 +37,9 @@ public final class WidgetUpdateDto<ID> {
         this.id = id;
         this.x = x;
         this.y = y;
+        this.zIndex = zIndex;
         this.width = width;
         this.height = height;
-        this.zIndex = zIndex;
     }
 
     public Widget<ID> apply(Widget<ID> oldWidget, Date updatedAt) {
@@ -47,8 +47,9 @@ public final class WidgetUpdateDto<ID> {
                 id,
                 getX().orElse(oldWidget.x),
                 getY().orElse(oldWidget.y),
-                getHeight().orElse(oldWidget.height), getZIndex().orElse(oldWidget.zIndex),
+                getZIndex().orElse(oldWidget.zIndex),
                 getWidth().orElse(oldWidget.width),
+                getHeight().orElse(oldWidget.height),
                 updatedAt
         );
     }
