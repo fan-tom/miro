@@ -1,0 +1,11 @@
+spring:
+  profiles: prod
+config:
+  widgetIdType: string
+  repositoryType: memory
+---
+spring:
+  profiles: test
+config:
+  widgetIdType: string
+  repositoryType: memory
