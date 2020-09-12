@@ -1,6 +1,7 @@
 package org.fantom.repositories.widget;
 
 import org.fantom.domain.Widget;
+import org.fantom.repositories.widget.dto.Area;
 import org.fantom.repositories.widget.dto.WidgetCreateDto;
 import org.fantom.repositories.widget.exceptions.ZIndexConflictException;
 
@@ -53,6 +54,20 @@ public interface WidgetRepository<ID> {
     Optional<Widget<ID>> getById(ID id);
 
     /**
+     * Get all widgets, sorted by zIndex asc
+     * @return stream over all widgets
+     */
+    Stream<Widget<ID>> getAll();
+
+
+    /**
+     * Get all widgets, falling into specified area
+     * @param area area to search widgets in
+     * @return stream of all widgets located in given area entirely
+     */
+    Stream<Widget<ID>> getInArea(Area area);
+
+    /**
      * Delete widget by it's id
      * @param id of widget to delete
      * @return Optional with deleted widget or none if widget with given id doesn't exist
@@ -72,12 +87,6 @@ public interface WidgetRepository<ID> {
      *
      */
     void deleteAll();
-
-    /**
-     * Get all widgets, sorted by zIndex asc
-     * @return stream over all widgets
-     */
-    Stream<Widget<ID>> getAll();
 
     /**
      * @return max zIndex among all widgets or none if repository is empty

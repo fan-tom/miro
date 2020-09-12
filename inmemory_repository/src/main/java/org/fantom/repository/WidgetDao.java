@@ -7,25 +7,25 @@ import java.util.Objects;
 
 public final class WidgetDao<ID> {
     /**
-     * Widget identifier, unique among all widgets. Unmodifiable
+     * Widget identifier, unique among all widgets
      */
     public final ID id;
     /**
      * x-coordinate of left-bottom vertex
      */
-    public int x;
+    public final int x;
     /**
      * y-coordinate of left-bottom vertex
      */
-    public int y;
+    public final int y;
     /**
      * Widget width
      */
-    public int width;
+    public final int width;
     /**
      * Widget height
      */
-    public int height;
+    public final int height;
     /**
      * z-coordinate of widget's plane, unique among all widgets, regardless of their coordinates
      */
@@ -33,17 +33,7 @@ public final class WidgetDao<ID> {
     /**
      * Widget's create or last modification date
      */
-    public Date updatedAt;
-
-    public WidgetDao(ID id, int x, int y, int width, int height, int zIndex, Date updatedAt) {
-        this.id = id;
-        this.x = x;
-        this.y = y;
-        this.zIndex = zIndex;
-        this.width = width;
-        this.height = height;
-        this.updatedAt = updatedAt;
-    }
+    public final Date updatedAt;
 
     public WidgetDao(Widget<ID> widget) {
         this.id = widget.id;
@@ -67,18 +57,12 @@ public final class WidgetDao<ID> {
             return false;
         } else {
             var widget = (WidgetDao<?>) o;
-            return x == widget.x &&
-                    y == widget.y &&
-                    width == widget.width &&
-                    height == widget.height &&
-                    zIndex == widget.zIndex &&
-                    id.equals(widget.id) &&
-                    updatedAt.equals(widget.updatedAt);
+            return id.equals(widget.id);
         }
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, x, y, width, height, zIndex, updatedAt);
+        return Objects.hashCode(id);
     }
 }

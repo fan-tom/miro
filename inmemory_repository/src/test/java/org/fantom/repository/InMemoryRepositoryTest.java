@@ -2,12 +2,14 @@ package org.fantom.repository;
 
 import org.fantom.domain.Widget;
 import org.fantom.repositories.widget.IdGenerator;
+import org.fantom.repositories.widget.dto.Area;
 import org.fantom.repositories.widget.dto.WidgetCreateDto;
 import org.fantom.repositories.widget.exceptions.ZIndexConflictException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
+import java.util.Comparator;
 import java.util.Date;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -196,5 +198,75 @@ public class InMemoryRepositoryTest {
         } catch (ZIndexConflictException e) {
             fail("zIndex conflict exception was thrown", e);
         }
+    }
+
+    @Test
+    public void canFindByArea() throws ZIndexConflictException {
+        var widget = repository.add(new WidgetCreateDto(-5, 30, 30, 10, 20, new Date()));
+        var widgetsInArea = repository.getInArea(new Area(-10, 10, 20, 60)).collect(Collectors.toList());
+        assertEquals(1, widgetsInArea.size());
+        assertEquals(widget, widgetsInArea.get(0));
+    }
+
+    @Test
+    public void canFindByExactTheSameArea() throws ZIndexConflictException {
+        var widget = repository.add(new WidgetCreateDto(-5, 30, 30, 10, 20, new Date()));
+        var widgetsInArea = repository.getInArea(new Area(widget.x, widget.x+widget.width, widget.y, widget.y+widget.height)).collect(Collectors.toList());
+        assertEquals(1, widgetsInArea.size());
+        assertEquals(widget, widgetsInArea.get(0));
+    }
+
+    @Test
+    public void partiallyFallingIntoAreaIsSkipped() throws ZIndexConflictException {
+        var widget = repository.add(new WidgetCreateDto(-5, 30, 30, 10, 20, new Date()));
+        var widget2 = repository.add(new WidgetCreateDto(-4, 20, 31, 10, 20, new Date()));
+        var widgetsInArea = repository.getInArea(new Area(widget.x, widget.x+widget.width, widget.y, widget.y+widget.height)).collect(Collectors.toList());
+        assertEquals(1, widgetsInArea.size());
+        assertEquals(widget, widgetsInArea.get(0));
+    }
+
+    @Test
+    public void oneWidgetInOtherIsFoundToo() throws ZIndexConflictException {
+        var widget = repository.add(new WidgetCreateDto(-5, 30, 30, 10, 20, new Date()));
+        var widget2 = repository.add(new WidgetCreateDto(-4, 40, 31, 5, 10, new Date()));
+        var widgetsInArea = repository.getInArea(new Area(widget.x, widget.x+widget.width, widget.y, widget.y+widget.height))
+                .sorted(Comparator.comparingInt(w -> w.zIndex))
+                .collect(Collectors.toList());
+        assertEquals(2, widgetsInArea.size());
+        assertEquals(widget, widgetsInArea.get(0));
+        assertEquals(widget2, widgetsInArea.get(1));
+    }
+
+    @Test
+    public void cannotFindAfterUpdate() throws ZIndexConflictException {
+        var widget = repository.add(new WidgetCreateDto(-5, 30, 30, 10, 20, new Date()));
+        var area = new Area(widget.x, widget.x + widget.width, widget.y, widget.y + widget.height);
+        var widgetsInArea = repository.getInArea(area).collect(Collectors.toList());
+
+        assertEquals(1, widgetsInArea.size());
+        assertEquals(widget, widgetsInArea.get(0));
+
+        var widget2 = repository.save(new Widget<>(widget.id, -4, 20, 30, 5, 10, new Date()));
+        assertTrue(widget2.isPresent());
+
+        var widgetsInAreaAfterUpdate = repository.getInArea(area).collect(Collectors.toList());
+
+        assertTrue(widgetsInAreaAfterUpdate.isEmpty());
+    }
+
+    @Test
+    public void cannotFindAfterDelete() throws ZIndexConflictException {
+        var widget = repository.add(new WidgetCreateDto(-5, 30, 30, 10, 20, new Date()));
+        var area = new Area(widget.x, widget.x + widget.width, widget.y, widget.y + widget.height);
+        var widgetsInArea = repository.getInArea(area).collect(Collectors.toList());
+
+        assertEquals(1, widgetsInArea.size());
+        assertEquals(widget, widgetsInArea.get(0));
+
+        var deleted = repository.deleteById(widget.id);
+        assertTrue(deleted);
+
+        var widgetsInAreaAfterDelete = repository.getInArea(area).collect(Collectors.toList());
+        assertTrue(widgetsInAreaAfterDelete.isEmpty());
     }
 }

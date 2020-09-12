@@ -4,6 +4,7 @@ import org.fantom.domain.Widget;
 import org.fantom.repositories.widget.exceptions.ZIndexConflictException;
 import org.fantom.services.widget.WidgetService;
 import org.fantom.web.controllers.widget.dto.WidgetCreateDto;
+import org.fantom.web.controllers.widget.dto.WidgetFindByArea;
 import org.fantom.web.controllers.widget.dto.WidgetResponseDto;
 import org.fantom.web.controllers.widget.dto.WidgetUpdateDto;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,5 +71,10 @@ public class WidgetsController<ID> {
         if (!deleted) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
+    }
+
+    @GetMapping(params = {"left", "right", "bottom", "top"})
+    Stream<Widget<ID>> findInArea(@Valid WidgetFindByArea findCriteria) {
+        return widgetService.getInArea(findCriteria.left, findCriteria.right, findCriteria.bottom, findCriteria.top);
     }
 }

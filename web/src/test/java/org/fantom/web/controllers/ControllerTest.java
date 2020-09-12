@@ -1,6 +1,5 @@
 package org.fantom.web.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.fantom.services.widget.WidgetService;
 import org.fantom.web.controllers.widget.WidgetsController;
@@ -9,13 +8,13 @@ import org.fantom.web.controllers.widget.dto.WidgetResponseDto;
 import org.fantom.web.controllers.widget.dto.WidgetUpdateDto;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.util.LinkedMultiValueMap;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -23,9 +22,7 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.springframework.test.util.AssertionErrors.assertEquals;
-import static org.springframework.test.util.AssertionErrors.assertNotEquals;
-import static org.springframework.test.util.AssertionErrors.assertNotNull;
+import static org.springframework.test.util.AssertionErrors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 //@WebMvcTest(WidgetsController.class)
@@ -225,5 +222,37 @@ public class ControllerTest {
         mvc.perform(get("/widgets/" + createResponseDto.id)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
+    }
+
+    @Test
+    public void canFindByArea() throws Exception {
+        var createRequestDto = new WidgetCreateDto(1, 2, 3, 4, 5);
+        var createRequest = objectMapper.writeValueAsString(createRequestDto);
+        var createResponseBody = mvc.perform(post("/widgets")
+                .content(createRequest)
+                .contentType(MediaType.APPLICATION_JSON)
+        )
+                .andExpect(MockMvcResultMatchers.status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        var createResponseDto = objectMapper.readValue(createResponseBody, WidgetResponseDto.class);
+
+        var areaParams = new LinkedMultiValueMap<String, String>();
+        areaParams.add("left", "1");
+        areaParams.add("right", "6");
+        areaParams.add("bottom", "1");
+        areaParams.add("top", "7");
+        var widgetsBody = mvc.perform(get("/widgets")
+                .queryParams(areaParams))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        var widgetsInArea = objectMapper.readValue(widgetsBody, WidgetResponseDto[].class);
+        assertThat(widgetsInArea).hasSize(1);
+        assertThat(widgetsInArea[0]).isEqualTo(createResponseDto);
     }
 }
