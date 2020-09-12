@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.util.StdDateFormat;
 import org.fantom.domain.Widget;
 
 import java.util.Date;
+import java.util.Objects;
 
 public class WidgetResponseDto<ID> {
     public final ID id;
@@ -35,5 +36,24 @@ public class WidgetResponseDto<ID> {
 
     public static <ID> WidgetResponseDto<ID> fromWidget(Widget<ID> widget) {
         return new WidgetResponseDto<>(widget.id, widget.x, widget.y, widget.zIndex, widget.width, widget.height, widget.updatedAt);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        WidgetResponseDto<?> that = (WidgetResponseDto<?>) o;
+        return x == that.x &&
+                y == that.y &&
+                zIndex == that.zIndex &&
+                width == that.width &&
+                height == that.height &&
+                id.equals(that.id) &&
+                updatedAt.equals(that.updatedAt);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, x, y, zIndex, width, height, updatedAt);
     }
 }
