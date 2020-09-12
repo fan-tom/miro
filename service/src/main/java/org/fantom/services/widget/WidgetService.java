@@ -2,6 +2,7 @@ package org.fantom.services.widget;
 
 import org.fantom.domain.Widget;
 import org.fantom.repositories.widget.WidgetRepository;
+import org.fantom.repositories.widget.dto.Area;
 import org.fantom.services.widget.dto.WidgetCreateDto;
 import org.fantom.repositories.widget.exceptions.ZIndexConflictException;
 import org.fantom.services.widget.dto.WidgetUpdateDto;
@@ -64,6 +65,10 @@ public class WidgetService<ID> {
 
     public Stream<Widget<ID>> getAll() {
         return widgetRepository.getAll();
+    }
+
+    public Stream<Widget<ID>> getInArea(int left, int right, int bottom, int top) {
+        return widgetRepository.getInArea(new Area(left, right, bottom, top));
     }
 
     public void clearAll() {
