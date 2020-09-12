@@ -54,7 +54,6 @@ public class ControllerTest {
 
     @Test
     public void canCreateWidgetWithAllFieldsSpecified() throws Exception {
-        assertThat(widgetsController).isNotNull();
         var requestDto = new WidgetCreateDto(0,0,0,1,1);
         var request = objectMapper.writeValueAsString(requestDto);
         var response = mvc.perform(post("/widgets")
@@ -76,7 +75,6 @@ public class ControllerTest {
 
     @Test
     public void canCreateWidgetWithoutZIndex() throws Exception {
-        assertThat(widgetsController).isNotNull();
         var requestDto = new WidgetCreateDto(0,0,null,1,1);
         var request = objectMapper.writeValueAsString(requestDto);
         var response = mvc.perform(post("/widgets")
@@ -98,7 +96,6 @@ public class ControllerTest {
 
     @Test
     public void zIndexIsChangedOnConflicts() throws Exception {
-        assertThat(widgetsController).isNotNull();
         var requestDto = new WidgetCreateDto(0,0,0,1,1);
         var request = objectMapper.writeValueAsString(requestDto);
         final var requestNumber = 10;
@@ -125,6 +122,38 @@ public class ControllerTest {
         assertThat(responseDtos).hasSize(requestNumber);
         var zIndices = responseDtos.stream().map(r -> r.zIndex).collect(Collectors.toSet());
         assertThat(responseDtos.stream().map(r -> r.zIndex)).containsExactlyElementsOf(zIndices);
+    }
+
+
+    @Test
+    public void canGetListOrderedByZIndexAsc() throws Exception {
+        var requestDto = new WidgetCreateDto(0,0,0,1,1);
+        var request = objectMapper.writeValueAsString(requestDto);
+        final var requestNumber = 10;
+        IntStream.generate(() -> 0).limit(requestNumber).forEach((_i) -> {
+            try {
+                mvc.perform(post("/widgets")
+                        .content(request)
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                        .andExpect(MockMvcResultMatchers.status().isCreated());
+            } catch (Exception e) {
+                fail("Unexpected exception while creating widget request", e);
+            }
+        });
+
+        var responseBody = mvc
+                .perform(get("/widgets")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        var responseDtos = Arrays.asList(objectMapper.readValue(responseBody, WidgetResponseDto[].class));
+        assertThat(responseDtos).hasSize(requestNumber);
+        var zIndices = responseDtos.stream().map(r -> r.zIndex).collect(Collectors.toList());
+        assertThat(zIndices).isEqualTo(IntStream.range(0, requestNumber).boxed().collect(Collectors.toList()));
     }
 
     @Test
@@ -178,7 +207,6 @@ public class ControllerTest {
 
     @Test
     public void canDelete() throws Exception {
-        assertThat(widgetsController).isNotNull();
         var createRequestDto = new WidgetCreateDto(0, 0, 0, 1, 1);
         var createRequest = objectMapper.writeValueAsString(createRequestDto);
         var createResponseBody = mvc.perform(post("/widgets")
