@@ -1,11 +1,10 @@
 package org.fantom.web.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.fantom.services.widget.WidgetService;
+import org.fantom.web.controllers.widget.WidgetsController;
 import org.fantom.web.controllers.widget.dto.WidgetCreateDto;
 import org.fantom.web.controllers.widget.dto.WidgetResponseDto;
 import org.fantom.web.controllers.widget.dto.WidgetUpdateDto;
-import org.fantom.web.repositories.widget.SqlWidgetRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -16,8 +15,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 
 import java.util.Arrays;
@@ -33,7 +30,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-//@Transactional(propagation = Propagation.SUPPORTS)
 public class ControllerTest {
     @Autowired
     MockMvc mvc;
@@ -42,11 +38,13 @@ public class ControllerTest {
     ObjectMapper objectMapper;
 
     @Autowired
-    WidgetService<?> widgetService;
+    WidgetsController<?> widgetsController;
 
     @AfterEach
-    public void clearAll() {
-        widgetService.clearAll();
+    public void clearAll() throws Exception {
+        // if you try to use controller or service directly, in db mode transaction will not be
+        // committed (or it is something other with transaction management) and tests will interfere with each other
+        mvc.perform(delete("/widgets"));
     }
 
     @Test

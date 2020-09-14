@@ -56,7 +56,7 @@ public class WidgetsController<ID> {
         return widgetService.getAll();
     }
 
-    @PostMapping()
+    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     WidgetResponseDto<ID> create(@Valid @RequestBody WidgetCreateDto widget) {
         try {
@@ -90,6 +90,12 @@ public class WidgetsController<ID> {
         if (!deleted) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
+    }
+
+    @DeleteMapping
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAll() {
+        widgetService.clearAll();
     }
 
     @GetMapping(params = {"left", "right", "bottom", "top"})
