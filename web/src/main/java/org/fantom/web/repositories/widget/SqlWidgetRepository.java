@@ -82,25 +82,30 @@ public class SqlWidgetRepository implements WidgetRepository<Long> {
     }
 
     @Override
-    @Transactional
     public Widget<Long> add(WidgetCreateDto widget) throws ZIndexConflictException {
         try {
-            var saved = internal.save(new WidgetEntity(widget));
-            return saved.toWidget();
+            return transactionTemplate.execute(status -> {
+                var saved = internal.save(new WidgetEntity(widget));
+                return saved.toWidget();
+            });
         } catch (DataIntegrityViolationException e) {
             return convertToZIndexConflict(e, widget.zIndex);
         }
     }
 
     @Override
-    @Transactional
     public List<Widget<Long>> add(Iterable<WidgetCreateDto> widgets) throws ZIndexConflictException {
         try {
-            var saved = internal.saveAll(StreamSupport
-                    .stream(widgets.spliterator(), false)
-                    .map(WidgetEntity::new)::iterator
-            );
-            return StreamSupport.stream(saved.spliterator(), false).map(WidgetEntity::toWidget).collect(Collectors.toList());
+            return transactionTemplate.execute(status -> {
+                var saved = internal.saveAll(StreamSupport
+                        .stream(widgets.spliterator(), false)
+                        .map(WidgetEntity::new)::iterator
+                );
+                return StreamSupport
+                        .stream(saved.spliterator(), false)
+                        .map(WidgetEntity::toWidget)
+                        .collect(Collectors.toList());
+            });
         } catch (DataIntegrityViolationException e) {
             return convertToZIndexConflict(e, null);
         }
