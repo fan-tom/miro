@@ -119,7 +119,6 @@ public class ControllerTest {
         assertThat(responseDtos.stream().map(r -> r.zIndex)).containsExactlyElementsOf(zIndices);
     }
 
-
     @Test
     public void canGetListOrderedByZIndexAsc() throws Exception {
         var requestDto = new WidgetCreateDto(0,0,0,1,1);
