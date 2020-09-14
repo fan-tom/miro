@@ -1,7 +1,6 @@
-package org.fantom.repository;
+package org.fantom.repositories.widget;
 
 import org.fantom.domain.Widget;
-import org.fantom.repositories.widget.IdGenerator;
 import org.fantom.repositories.widget.dto.Area;
 import org.fantom.repositories.widget.dto.WidgetCreateDto;
 import org.fantom.repositories.widget.exceptions.ZIndexConflictException;
@@ -16,21 +15,18 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class InMemoryRepositoryTest {
-    private static class IntegerIdGenerator implements IdGenerator<Integer> {
-        private int nextValue = Integer.MIN_VALUE;
+public abstract class RepositoryTest<ID> {
+    protected WidgetRepository<ID> repository;
 
-        @Override
-        public Integer generate() {
-            return nextValue++;
-        }
+    public RepositoryTest(WidgetRepository<ID> repository) {
+        this.repository = repository;
     }
 
-    private InMemoryWidgetRepository<Integer> repository;
+    abstract protected void resetRepo();
 
     @BeforeEach
     public void refreshRepo() {
-        repository = new InMemoryWidgetRepository<>(new IntegerIdGenerator());
+        resetRepo();
     }
 
     @Test
@@ -47,7 +43,7 @@ public class InMemoryRepositoryTest {
     public void throwsZIndexConflictExceptionOnAdd() {
         try {
             repository.add(new WidgetCreateDto(0, 0, 0, 0, 0, new Date()));
-            var widget = repository.add(new WidgetCreateDto(0, 0, 0, 0, 0, new Date()));
+            repository.add(new WidgetCreateDto(0, 0, 0, 0, 0, new Date()));
             fail("zIndex conflict exception was not thrown");
         } catch (ZIndexConflictException ignored) {
         }
@@ -74,14 +70,41 @@ public class InMemoryRepositoryTest {
     }
 
     @Test
-    public void throwsZIndexConflictExceptionOnSave() {
+    public void saveOfDeletedWidgetReturnsNone() {
         try {
             var widget = repository.add(new WidgetCreateDto(0, 0, 0, 0, 0, new Date()));
-            var widget2 = repository.add(new WidgetCreateDto(0, 0, 1, 0, 0, new Date()));
+            var newWidget = new Widget.Builder<>(widget)
+                    .withX(1)
+                    .withY(2)
+                    .withWidth(3)
+                    .withHeight(4)
+                    .withZIndex(5)
+                    .withUpdatedAt(Date.from(new Date().toInstant().plusSeconds(1000)))
+                    .build();
+            var deleted = repository.deleteById(widget.id);
+            assertTrue(deleted);
+            var saved = repository.save(newWidget);
+            assertTrue(saved.isEmpty(), "widget was saved");
+        } catch (ZIndexConflictException e) {
+            fail("zIndex conflict exception was thrown", e);
+        }
+    }
+
+    @Test
+    public void throwsZIndexConflictExceptionOnSave() {
+        Widget<ID> widget = null;
+        Widget<ID> widget2 = null;
+        try {
+            widget = repository.add(new WidgetCreateDto(0, 0, 0, 0, 0, new Date()));
+            widget2 = repository.add(new WidgetCreateDto(0, 0, 1, 0, 0, new Date()));
             var newWidget = new Widget.Builder<>(widget2).withZIndex(0).build();
             repository.save(newWidget);
             fail("Widget saved without zIndex conflict exception");
         } catch (ZIndexConflictException ignored) {
+            var widgets = repository.getAll().collect(Collectors.toList());
+            assertEquals(2, widgets.size());
+            assertEquals(widget, widgets.get(0));
+            assertEquals(widget2, widgets.get(1));
         }
     }
 
@@ -118,14 +141,14 @@ public class InMemoryRepositoryTest {
 
         modifyStartLock.lock();
 
-        Widget<Integer> widget = null;
+        Widget<ID> widget = null;
         try {
             widget = repository.add(new WidgetCreateDto(0, 0, Integer.MAX_VALUE, 0, 0, new Date()));
         } catch (ZIndexConflictException e) {
             fail("zIndex conflict exception was thrown", e);
         }
 
-        Widget<Integer> finalWidget = widget;
+        Widget<ID> finalWidget = widget;
         new Thread(() -> {
             modifyStartLock.lock();
             try {
@@ -134,18 +157,19 @@ public class InMemoryRepositoryTest {
                 fail("zIndex conflict exception was thrown", e);
             }
         }).start();
-        var newWidget = repository.runAtomically(repo -> {
-                modifyStartLock.unlock();
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                var newW = repo.getById(finalWidget.id);
-                assertTrue(newW.isPresent());
-                return newW.get();
-            });
-        assertEquals(finalWidget, newWidget, "Object in repo modified while runAtomically");
+        repository.runAtomically(repo -> {
+            var oldWidget = repo.getById(finalWidget.id);
+            assertTrue(oldWidget.isPresent());
+            modifyStartLock.unlock();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            var newWidget = repo.getById(finalWidget.id);
+            assertTrue(newWidget.isPresent());
+            assertEquals(oldWidget.get(), newWidget.get(), "Object in repo modified while runAtomically");
+        });
     }
 
     @Test
@@ -155,7 +179,7 @@ public class InMemoryRepositoryTest {
             repository.shiftUpwards(widget.zIndex-1);
             var widgets = repository.getAll().collect(Collectors.toList());
             assertEquals(widgets.size(), 1);
-            assertEquals(widgets.get(0), widget, "widget is changed while shiftUpwards");
+            assertEquals(widget, widgets.get(0), "widget is changed while shiftUpwards");
         } catch (ZIndexConflictException e) {
             fail("zIndex conflict exception was thrown", e);
         }
@@ -174,26 +198,26 @@ public class InMemoryRepositoryTest {
 
             assertEquals(widgets.size(), 4);
 
-            assertEquals(widgets.get(0), widget0, "widget0 is changed while shiftUpwards");
-            assertEquals(widgets.get(3), widget4, "widget4 is changed while shiftUpwards");
+            assertEquals(widget0, widgets.get(0), "widget0 is changed while shiftUpwards");
+            assertEquals(widget4, widgets.get(3), "widget4 is changed while shiftUpwards");
 
             var shiftedWidget1 = widgets.get(1);
-            assertEquals(shiftedWidget1.id, widget1.id);
-            assertEquals(shiftedWidget1.x, widget1.x);
-            assertEquals(shiftedWidget1.y, widget1.y);
-            assertEquals(shiftedWidget1.width, widget1.width);
-            assertEquals(shiftedWidget1.height, widget1.height);
-            assertEquals(shiftedWidget1.updatedAt, widget1.updatedAt);
-            assertEquals(shiftedWidget1.zIndex, widget1.zIndex + 1);
+            assertEquals(widget1.id, shiftedWidget1.id);
+            assertEquals(widget1.x, shiftedWidget1.x);
+            assertEquals(widget1.y, shiftedWidget1.y);
+            assertEquals(widget1.width, shiftedWidget1.width);
+            assertEquals(widget1.height, shiftedWidget1.height);
+            assertEquals(widget1.updatedAt, shiftedWidget1.updatedAt);
+            assertEquals(widget1.zIndex + 1, shiftedWidget1.zIndex);
 
             var shiftedWidget2 = widgets.get(2);
-            assertEquals(shiftedWidget2.id, widget2.id);
-            assertEquals(shiftedWidget2.x, widget2.x);
-            assertEquals(shiftedWidget2.y, widget2.y);
-            assertEquals(shiftedWidget2.width, widget2.width);
-            assertEquals(shiftedWidget2.height, widget2.height);
-            assertEquals(shiftedWidget2.updatedAt, widget2.updatedAt);
-            assertEquals(shiftedWidget2.zIndex, widget2.zIndex + 1);
+            assertEquals(widget2.id, shiftedWidget2.id);
+            assertEquals(widget2.x, shiftedWidget2.x);
+            assertEquals(widget2.y, shiftedWidget2.y);
+            assertEquals(widget2.width, shiftedWidget2.width);
+            assertEquals(widget2.height, shiftedWidget2.height);
+            assertEquals(widget2.updatedAt, shiftedWidget2.updatedAt);
+            assertEquals(widget2.zIndex + 1, shiftedWidget2.zIndex);
 
         } catch (ZIndexConflictException e) {
             fail("zIndex conflict exception was thrown", e);
@@ -219,7 +243,7 @@ public class InMemoryRepositoryTest {
     @Test
     public void partiallyFallingIntoAreaIsSkipped() throws ZIndexConflictException {
         var widget = repository.add(new WidgetCreateDto(-5, 30, 30, 10, 20, new Date()));
-        var widget2 = repository.add(new WidgetCreateDto(-4, 20, 31, 10, 20, new Date()));
+        repository.add(new WidgetCreateDto(-4, 20, 31, 10, 20, new Date()));
         var widgetsInArea = repository.getInArea(new Area(widget.x, widget.x+widget.width, widget.y, widget.y+widget.height)).collect(Collectors.toList());
         assertEquals(1, widgetsInArea.size());
         assertEquals(widget, widgetsInArea.get(0));
