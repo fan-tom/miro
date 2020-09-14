@@ -2,12 +2,12 @@ package org.fantom.web.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.fantom.services.widget.WidgetService;
-import org.fantom.web.controllers.widget.WidgetsController;
 import org.fantom.web.controllers.widget.dto.WidgetCreateDto;
 import org.fantom.web.controllers.widget.dto.WidgetResponseDto;
 import org.fantom.web.controllers.widget.dto.WidgetUpdateDto;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,21 +25,15 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.test.util.AssertionErrors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
-//@WebMvcTest(WidgetsController.class)
 @SpringBootTest
 @AutoConfigureMockMvc
-//@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-//@ActiveProfiles("test")
-//@ContextConfiguration(classes=TestApp.class, initializers=ConfigFileApplicationContextInitializer.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ControllerTest {
     @Autowired
     MockMvc mvc;
 
     @Autowired
     ObjectMapper objectMapper;
-
-    @Autowired
-    WidgetsController<Integer> widgetsController;
 
     @Autowired
     WidgetService<Integer> widgetService;
@@ -61,7 +55,7 @@ public class ControllerTest {
                 .andReturn();
         var responseBody = response.getResponse().getContentAsString();
         var responseDto = objectMapper.readValue(responseBody, WidgetResponseDto.class);
-        assertEquals("Id must be string", responseDto.id.getClass(), String.class);
+        assertThat(responseDto.id).isNotNull();
         assertEquals("x must be the same", responseDto.x, requestDto.x);
         assertEquals("y must be the same", responseDto.y, requestDto.y);
         assertEquals("zIndex must be the same", responseDto.zIndex, requestDto.zIndex);
@@ -82,12 +76,12 @@ public class ControllerTest {
                 .andReturn();
         var responseBody = response.getResponse().getContentAsString();
         var responseDto = objectMapper.readValue(responseBody, WidgetResponseDto.class);
-        assertEquals("Id must be string", responseDto.id.getClass(), String.class);
-        assertEquals("x must be the same", responseDto.x, requestDto.x);
-        assertEquals("y must be the same", responseDto.y, requestDto.y);
+        assertThat(responseDto.id).isNotNull();
+        assertEquals("x must be the same", requestDto.x, responseDto.x);
+        assertEquals("y must be the same", requestDto.y, responseDto.y);
         assertThat(responseDto.zIndex).isNotNull();
-        assertEquals("width must be the same", responseDto.width, requestDto.width);
-        assertEquals("height must be the same", responseDto.height, requestDto.height);
+        assertEquals("width must be the same", requestDto.width, responseDto.width);
+        assertEquals("height must be the same", requestDto.height, responseDto.height);
         assertThat(responseDto.updatedAt).isNotNull();
     }
 
@@ -155,7 +149,6 @@ public class ControllerTest {
 
     @Test
     public void canUpdate() throws Exception {
-        assertThat(widgetsController).isNotNull();
         var createRequestDto = new WidgetCreateDto(0,0,0,1,1);
         var createRequest = objectMapper.writeValueAsString(createRequestDto);
         var createResponseBody = mvc.perform(post("/widgets")
@@ -172,7 +165,7 @@ public class ControllerTest {
         var updateRequestDto = new WidgetUpdateDto(1,1,1,2,2);
         var updateRequest = objectMapper.writeValueAsString(updateRequestDto);
 
-        var updateResponseBody = mvc.perform(put("/widgets/"+createResponseDto.id)
+        var updateResponseBody = mvc.perform(put("/widgets/" + createResponseDto.id.toString())
                 .content(updateRequest)
                 .contentType(MediaType.APPLICATION_JSON)
         )
@@ -217,7 +210,7 @@ public class ControllerTest {
 
         var createResponseDto = objectMapper.readValue(createResponseBody, WidgetResponseDto.class);
 
-        mvc.perform(delete("/widgets/" + createResponseDto.id))
+        mvc.perform(delete("/widgets/" + createResponseDto.id.toString()))
                 .andExpect(MockMvcResultMatchers.status().isNoContent());
         mvc.perform(get("/widgets/" + createResponseDto.id)
                 .contentType(MediaType.APPLICATION_JSON))
