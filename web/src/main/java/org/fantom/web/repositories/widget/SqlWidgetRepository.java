@@ -17,11 +17,14 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
+import org.springframework.orm.jpa.JpaSystemException;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -71,11 +74,20 @@ public class SqlWidgetRepository implements WidgetRepository<Long> {
     @Autowired
     TransactionTemplate transactionTemplate;
 
-    protected <T> T convertToZIndexConflict(DataIntegrityViolationException e, Integer zIndex) throws DataIntegrityViolationException, ZIndexConflictException {
-        var cause = e.getCause();
-        if (cause instanceof ConstraintViolationException) {
-            if (((ConstraintViolationException) cause).getConstraintName().toLowerCase().contains("z_index_unique")) {
-                throw new ZIndexConflictException(zIndex);
+    protected <T> T convertToZIndexConflict(RuntimeException e, Integer zIndex) throws RuntimeException, ZIndexConflictException {
+        if (e instanceof DataIntegrityViolationException) {
+            var cause = e.getCause();
+            if (cause instanceof ConstraintViolationException) {
+                if (((ConstraintViolationException) cause).getConstraintName().toLowerCase().contains("z_index_unique")) {
+                    throw new ZIndexConflictException(zIndex);
+                }
+            }
+        } else if (e instanceof JpaSystemException) {
+            var rootCause = ((JpaSystemException)e).getRootCause();
+            if (rootCause instanceof SQLIntegrityConstraintViolationException) {
+                if (rootCause.getMessage().toLowerCase().contains("z_index_unique")) {
+                    throw new ZIndexConflictException(zIndex);
+                }
             }
         }
         throw e;
@@ -88,7 +100,7 @@ public class SqlWidgetRepository implements WidgetRepository<Long> {
                 var saved = internal.save(new WidgetEntity(widget));
                 return saved.toWidget();
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (RuntimeException e) {
             return convertToZIndexConflict(e, widget.zIndex);
         }
     }
@@ -106,7 +118,7 @@ public class SqlWidgetRepository implements WidgetRepository<Long> {
                         .map(WidgetEntity::toWidget)
                         .collect(Collectors.toList());
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (RuntimeException e) {
             return convertToZIndexConflict(e, null);
         }
     }
@@ -121,7 +133,7 @@ public class SqlWidgetRepository implements WidgetRepository<Long> {
                     return Optional.empty();
                 }
             });
-        } catch (DataIntegrityViolationException e) {
+        } catch (RuntimeException e) {
             return convertToZIndexConflict(e, null);
         }
     }
@@ -138,7 +150,7 @@ public class SqlWidgetRepository implements WidgetRepository<Long> {
                         }
                     })
             );
-        } catch (DataIntegrityViolationException e) {
+        } catch (RuntimeException e) {
             convertToZIndexConflict(e, null);
         }
     }
