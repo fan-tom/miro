@@ -135,7 +135,8 @@ public class InMemoryWidgetRepository<ID> implements WidgetRepository<ID> {
                 if (oldWidget.zIndex != newWidget.zIndex) {
                     if (!widgetsByZIndex.containsKey(newWidget.zIndex)) {
                         // zIndex is free
-                        widgetsByZIndex.put(newWidget.zIndex, oldWidget);
+                        widgetsByZIndex.remove(oldWidget.zIndex);
+                        widgetsByZIndex.put(newWidget.zIndex, newWidget);
                     } else {
                         // zIndex already occupied by other widget
                         throw new ZIndexConflictException(newWidget.zIndex);

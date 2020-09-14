@@ -64,6 +64,9 @@ public abstract class RepositoryTest<ID> {
             var saved = repository.save(newWidget);
             assertTrue(saved.isPresent(), "widget was not saved");
             assertEquals(saved.get(), newWidget, "saved widget differs");
+            var allWidgets = repository.getAll();
+            assertEquals(1, allWidgets.size());
+            assertEquals(saved.get(), allWidgets.get(0));
         } catch (ZIndexConflictException e) {
             fail("zIndex conflict exception was thrown", e);
         }
@@ -250,7 +253,7 @@ public abstract class RepositoryTest<ID> {
     }
 
     @Test
-    public void oneWidgetInOtherIsFoundToo() throws ZIndexConflictException {
+    public void oneWidgetInOtherIsFoundInAreaToo() throws ZIndexConflictException {
         var widget = repository.add(new WidgetCreateDto(-5, 30, 30, 10, 20, new Date()));
         var widget2 = repository.add(new WidgetCreateDto(-4, 40, 31, 5, 10, new Date()));
         var widgetsInArea = repository.getInArea(new Area(widget.x, widget.x+widget.width, widget.y, widget.y+widget.height))
@@ -263,7 +266,7 @@ public abstract class RepositoryTest<ID> {
     }
 
     @Test
-    public void cannotFindAfterUpdate() throws ZIndexConflictException {
+    public void cannotFindInAreaAfterUpdate() throws ZIndexConflictException {
         var widget = repository.add(new WidgetCreateDto(-5, 30, 30, 10, 20, new Date()));
         var area = new Area(widget.x, widget.x + widget.width, widget.y, widget.y + widget.height);
         var widgetsInArea = repository.getInArea(area);
