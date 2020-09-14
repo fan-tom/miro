@@ -48,7 +48,7 @@ public class WidgetsController<ID> {
     }
 
     protected ResponseStatusException wrapZIndexException(ZIndexConflictException e) {
-        return new ResponseStatusException(HttpStatus.CONFLICT, "Widget with zIndex "+e.zIndex+" already exists");
+        return new ResponseStatusException(HttpStatus.CONFLICT, "Widget with zIndex "+e.zIndexAsString()+" already exists");
     }
 
     @GetMapping
