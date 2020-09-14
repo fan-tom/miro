@@ -3,6 +3,7 @@ package org.fantom.web.controllers.widget;
 import org.fantom.domain.Widget;
 import org.fantom.repositories.widget.exceptions.ZIndexConflictException;
 import org.fantom.services.widget.WidgetService;
+import org.fantom.web.config.WidgetIdType;
 import org.fantom.web.controllers.widget.dto.WidgetCreateDto;
 import org.fantom.web.controllers.widget.dto.WidgetFindByArea;
 import org.fantom.web.controllers.widget.dto.WidgetResponseDto;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 @RestController
@@ -22,10 +24,26 @@ import java.util.stream.Stream;
 @Validated
 public class WidgetsController<ID> {
     private final WidgetService<ID> widgetService;
+    protected final Function<String, ID> idConverter;
 
     @Autowired
-    public WidgetsController(WidgetService<ID> widgetService) {
+    @SuppressWarnings("unchecked")
+    public WidgetsController(WidgetService<ID> widgetService, WidgetIdType idClass) {
         this.widgetService = widgetService;
+        switch (idClass) {
+            case integer:
+                this.idConverter = s -> (ID) Long.valueOf(s);
+                break;
+            case string:
+                this.idConverter = s -> (ID) s;
+                break;
+            default:
+                throw new IllegalArgumentException("idClass must be one of integer or string, got " + idClass.name());
+        }
+    }
+
+    protected ID convertId(String id) {
+        return idConverter.apply(id);
     }
 
     protected ResponseStatusException wrapZIndexException(ZIndexConflictException e) {
@@ -51,30 +69,30 @@ public class WidgetsController<ID> {
     }
 
     @PutMapping("/{id}")
-    ResponseEntity<WidgetResponseDto<ID>> update(@PathVariable("id") ID id, @Valid @RequestBody WidgetUpdateDto widget) {
+    ResponseEntity<WidgetResponseDto<ID>> update(@PathVariable("id") String id, @Valid @RequestBody WidgetUpdateDto widget) {
         try {
-            return ResponseEntity.of(widgetService.update(widget.toServiceDto(id)).map(WidgetResponseDto::fromWidget));
+            return ResponseEntity.of(widgetService.update(widget.toServiceDto(convertId(id))).map(WidgetResponseDto::fromWidget));
         } catch (ZIndexConflictException e) {
             throw wrapZIndexException(e);
         }
     }
 
     @GetMapping("/{id}")
-    ResponseEntity<WidgetResponseDto<ID>> getById(@PathVariable("id") ID id) {
-        return ResponseEntity.of(widgetService.getById(id).map(WidgetResponseDto::fromWidget));
+    ResponseEntity<WidgetResponseDto<ID>> getById(@PathVariable("id") String id) {
+        return ResponseEntity.of(widgetService.getById(convertId(id)).map(WidgetResponseDto::fromWidget));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void delete(@PathVariable ID id) {
-        var deleted = widgetService.delete(id);
+    void delete(@PathVariable("id") String id) {
+        var deleted = widgetService.delete(convertId(id));
         if (!deleted) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
     }
 
     @GetMapping(params = {"left", "right", "bottom", "top"})
-    Stream<Widget<ID>> findInArea(@Valid WidgetFindByArea findCriteria) {
-        return widgetService.getInArea(findCriteria.left, findCriteria.right, findCriteria.bottom, findCriteria.top);
+    Stream<WidgetResponseDto<ID>> findInArea(@Valid WidgetFindByArea findCriteria) {
+        return widgetService.getInArea(findCriteria.left, findCriteria.right, findCriteria.bottom, findCriteria.top).map(WidgetResponseDto::fromWidget);
     }
 }
