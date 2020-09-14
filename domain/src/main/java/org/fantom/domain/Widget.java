@@ -72,6 +72,19 @@ public final class Widget<ID> {
     }
 
     @Override
+    public String toString() {
+        return "Widget{" +
+                "id=" + id +
+                ", x=" + x +
+                ", y=" + y +
+                ", zIndex=" + zIndex +
+                ", width=" + width +
+                ", height=" + height +
+                ", updatedAt=" + updatedAt +
+                '}';
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
