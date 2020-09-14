@@ -101,7 +101,7 @@ public abstract class RepositoryTest<ID> {
             repository.save(newWidget);
             fail("Widget saved without zIndex conflict exception");
         } catch (ZIndexConflictException ignored) {
-            var widgets = repository.getAll().collect(Collectors.toList());
+            var widgets = repository.getAll();
             assertEquals(2, widgets.size());
             assertEquals(widget, widgets.get(0));
             assertEquals(widget2, widgets.get(1));
@@ -177,7 +177,7 @@ public abstract class RepositoryTest<ID> {
         try {
             var widget = repository.add(new WidgetCreateDto(0,0,0,0,0, new Date()));
             repository.shiftUpwards(widget.zIndex-1);
-            var widgets = repository.getAll().collect(Collectors.toList());
+            var widgets = repository.getAll();
             assertEquals(widgets.size(), 1);
             assertEquals(widget, widgets.get(0), "widget is changed while shiftUpwards");
         } catch (ZIndexConflictException e) {
@@ -194,7 +194,7 @@ public abstract class RepositoryTest<ID> {
             var widget4 = repository.add(new WidgetCreateDto(0,0,4,0,0, new Date()));
 
             repository.shiftUpwards(widget1.zIndex);
-            var widgets = repository.getAll().collect(Collectors.toList());
+            var widgets = repository.getAll();
 
             assertEquals(widgets.size(), 4);
 
@@ -227,7 +227,7 @@ public abstract class RepositoryTest<ID> {
     @Test
     public void canFindByArea() throws ZIndexConflictException {
         var widget = repository.add(new WidgetCreateDto(-5, 30, 30, 10, 20, new Date()));
-        var widgetsInArea = repository.getInArea(new Area(-10, 10, 20, 60)).collect(Collectors.toList());
+        var widgetsInArea = repository.getInArea(new Area(-10, 10, 20, 60));
         assertEquals(1, widgetsInArea.size());
         assertEquals(widget, widgetsInArea.get(0));
     }
@@ -235,7 +235,7 @@ public abstract class RepositoryTest<ID> {
     @Test
     public void canFindByExactTheSameArea() throws ZIndexConflictException {
         var widget = repository.add(new WidgetCreateDto(-5, 30, 30, 10, 20, new Date()));
-        var widgetsInArea = repository.getInArea(new Area(widget.x, widget.x+widget.width, widget.y, widget.y+widget.height)).collect(Collectors.toList());
+        var widgetsInArea = repository.getInArea(new Area(widget.x, widget.x+widget.width, widget.y, widget.y+widget.height));
         assertEquals(1, widgetsInArea.size());
         assertEquals(widget, widgetsInArea.get(0));
     }
@@ -244,7 +244,7 @@ public abstract class RepositoryTest<ID> {
     public void partiallyFallingIntoAreaIsSkipped() throws ZIndexConflictException {
         var widget = repository.add(new WidgetCreateDto(-5, 30, 30, 10, 20, new Date()));
         repository.add(new WidgetCreateDto(-4, 20, 31, 10, 20, new Date()));
-        var widgetsInArea = repository.getInArea(new Area(widget.x, widget.x+widget.width, widget.y, widget.y+widget.height)).collect(Collectors.toList());
+        var widgetsInArea = repository.getInArea(new Area(widget.x, widget.x+widget.width, widget.y, widget.y+widget.height));
         assertEquals(1, widgetsInArea.size());
         assertEquals(widget, widgetsInArea.get(0));
     }
@@ -254,6 +254,7 @@ public abstract class RepositoryTest<ID> {
         var widget = repository.add(new WidgetCreateDto(-5, 30, 30, 10, 20, new Date()));
         var widget2 = repository.add(new WidgetCreateDto(-4, 40, 31, 5, 10, new Date()));
         var widgetsInArea = repository.getInArea(new Area(widget.x, widget.x+widget.width, widget.y, widget.y+widget.height))
+                .stream()
                 .sorted(Comparator.comparingInt(w -> w.zIndex))
                 .collect(Collectors.toList());
         assertEquals(2, widgetsInArea.size());
@@ -265,7 +266,7 @@ public abstract class RepositoryTest<ID> {
     public void cannotFindAfterUpdate() throws ZIndexConflictException {
         var widget = repository.add(new WidgetCreateDto(-5, 30, 30, 10, 20, new Date()));
         var area = new Area(widget.x, widget.x + widget.width, widget.y, widget.y + widget.height);
-        var widgetsInArea = repository.getInArea(area).collect(Collectors.toList());
+        var widgetsInArea = repository.getInArea(area);
 
         assertEquals(1, widgetsInArea.size());
         assertEquals(widget, widgetsInArea.get(0));
@@ -273,7 +274,7 @@ public abstract class RepositoryTest<ID> {
         var widget2 = repository.save(new Widget<>(widget.id, -4, 20, 30, 5, 10, new Date()));
         assertTrue(widget2.isPresent());
 
-        var widgetsInAreaAfterUpdate = repository.getInArea(area).collect(Collectors.toList());
+        var widgetsInAreaAfterUpdate = repository.getInArea(area);
 
         assertTrue(widgetsInAreaAfterUpdate.isEmpty());
     }
@@ -282,7 +283,7 @@ public abstract class RepositoryTest<ID> {
     public void cannotFindAfterDelete() throws ZIndexConflictException {
         var widget = repository.add(new WidgetCreateDto(-5, 30, 30, 10, 20, new Date()));
         var area = new Area(widget.x, widget.x + widget.width, widget.y, widget.y + widget.height);
-        var widgetsInArea = repository.getInArea(area).collect(Collectors.toList());
+        var widgetsInArea = repository.getInArea(area);
 
         assertEquals(1, widgetsInArea.size());
         assertEquals(widget, widgetsInArea.get(0));
@@ -290,7 +291,7 @@ public abstract class RepositoryTest<ID> {
         var deleted = repository.deleteById(widget.id);
         assertTrue(deleted);
 
-        var widgetsInAreaAfterDelete = repository.getInArea(area).collect(Collectors.toList());
+        var widgetsInAreaAfterDelete = repository.getInArea(area);
         assertTrue(widgetsInAreaAfterDelete.isEmpty());
     }
 }

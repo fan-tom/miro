@@ -5,6 +5,7 @@ import org.fantom.services.widget.WidgetService;
 import org.fantom.web.controllers.widget.dto.WidgetCreateDto;
 import org.fantom.web.controllers.widget.dto.WidgetResponseDto;
 import org.fantom.web.controllers.widget.dto.WidgetUpdateDto;
+import org.fantom.web.repositories.widget.SqlWidgetRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -12,8 +13,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 
 import java.util.Arrays;
@@ -27,7 +31,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ActiveProfiles("test")
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
+//@Transactional(propagation = Propagation.SUPPORTS)
 public class ControllerTest {
     @Autowired
     MockMvc mvc;
@@ -36,7 +42,7 @@ public class ControllerTest {
     ObjectMapper objectMapper;
 
     @Autowired
-    WidgetService<Integer> widgetService;
+    WidgetService<?> widgetService;
 
     @AfterEach
     public void clearAll() {

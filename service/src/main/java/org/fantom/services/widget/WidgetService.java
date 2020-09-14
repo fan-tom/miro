@@ -8,13 +8,14 @@ import org.fantom.repositories.widget.exceptions.ZIndexConflictException;
 import org.fantom.services.widget.dto.WidgetUpdateDto;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 public class WidgetService<ID> {
     private final WidgetRepository<ID> widgetRepository;
 
     public WidgetService(WidgetRepository<ID> widgetRepository) {
+        System.out.println("Creating service with repo" + widgetRepository.getClass().getName());
         this.widgetRepository = widgetRepository;
     }
 
@@ -63,11 +64,11 @@ public class WidgetService<ID> {
         return widgetRepository.getById(id);
     }
 
-    public Stream<Widget<ID>> getAll() {
+    public List<Widget<ID>> getAll() {
         return widgetRepository.getAll();
     }
 
-    public Stream<Widget<ID>> getInArea(int left, int right, int bottom, int top) {
+    public List<Widget<ID>> getInArea(int left, int right, int bottom, int top) {
         return widgetRepository.getInArea(new Area(left, right, bottom, top));
     }
 

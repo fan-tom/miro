@@ -5,8 +5,8 @@ import org.fantom.repositories.widget.dto.Area;
 import org.fantom.repositories.widget.dto.WidgetCreateDto;
 import org.fantom.repositories.widget.exceptions.ZIndexConflictException;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 /**
  * Interface for widget repositories
@@ -30,7 +30,7 @@ public interface WidgetRepository<ID> {
      * @return new widgets with generated ids
      * @throws ZIndexConflictException when there already exists widget with the same zIndex
      */
-    Stream<Widget<ID>> add(Iterable<WidgetCreateDto> widgets) throws ZIndexConflictException;
+    List<Widget<ID>> add(Iterable<WidgetCreateDto> widgets) throws ZIndexConflictException;
 
     /**
      * Update given widget, is exists
@@ -40,7 +40,7 @@ public interface WidgetRepository<ID> {
     Optional<Widget<ID>> save(Widget<ID> widget) throws ZIndexConflictException;
 
     /**
-     * Update given widgets
+     * Update given widgets. If there are deleted widgets in argument, they are skipped, no error is thrown
      * @param widgets to update
      */
     void save(Iterable<Widget<ID>> widgets) throws ZIndexConflictException;
@@ -57,7 +57,7 @@ public interface WidgetRepository<ID> {
      * Get all widgets, sorted by zIndex asc
      * @return stream over all widgets
      */
-    Stream<Widget<ID>> getAll();
+    List<Widget<ID>> getAll();
 
 
     /**
@@ -65,7 +65,7 @@ public interface WidgetRepository<ID> {
      * @param area area to search widgets in
      * @return stream of all widgets located in given area entirely
      */
-    Stream<Widget<ID>> getInArea(Area area);
+    List<Widget<ID>> getInArea(Area area);
 
     /**
      * Delete widget by it's id
@@ -103,6 +103,7 @@ public interface WidgetRepository<ID> {
     /**
      * Run function under lock of repository
      * Implementations may use different ways to provide atomicity, like locks or transactions
+     * Note, that some implementations may defer locking repository until it is first accessed
      * @param action function to perform atomically. Isolation level must be equal to Serializable, in other words,
      * the set of entities in repository, read at the beginning of transaction, must be the same when read at the end.
      * @param <T> type of action result

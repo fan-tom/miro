@@ -24,7 +24,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @Lazy
@@ -40,7 +40,6 @@ interface InternalSqlWidgetRepository extends PagingAndSortingRepository<WidgetE
     @Query("delete from WidgetEntity w where w.id = :id")
     WidgetEntity removeByIdReturning(@Param("id") Long id);
 
-    @Transactional
     int removeById(Long id);
 
     @Modifying
@@ -83,6 +82,7 @@ public class SqlWidgetRepository implements WidgetRepository<Long> {
     }
 
     @Override
+    @Transactional
     public Widget<Long> add(WidgetCreateDto widget) throws ZIndexConflictException {
         try {
             var saved = internal.save(new WidgetEntity(widget));
@@ -93,13 +93,14 @@ public class SqlWidgetRepository implements WidgetRepository<Long> {
     }
 
     @Override
-    public Stream<Widget<Long>> add(Iterable<WidgetCreateDto> widgets) throws ZIndexConflictException {
+    @Transactional
+    public List<Widget<Long>> add(Iterable<WidgetCreateDto> widgets) throws ZIndexConflictException {
         try {
             var saved = internal.saveAll(StreamSupport
                     .stream(widgets.spliterator(), false)
                     .map(WidgetEntity::new)::iterator
             );
-            return StreamSupport.stream(saved.spliterator(), false).map(WidgetEntity::toWidget);
+            return StreamSupport.stream(saved.spliterator(), false).map(WidgetEntity::toWidget).collect(Collectors.toList());
         } catch (DataIntegrityViolationException e) {
             return convertToZIndexConflict(e, null);
         }
@@ -138,26 +139,38 @@ public class SqlWidgetRepository implements WidgetRepository<Long> {
     }
 
     @Override
+    @Transactional
     public Optional<Widget<Long>> getById(Long id) {
         return internal.findById(id).map(WidgetEntity::toWidget);
     }
 
     @Override
-    public Stream<Widget<Long>> getAll() {
-        return StreamSupport.stream(internal.findAll(Sort.by("zIndex")).spliterator(), false).map(WidgetEntity::toWidget);
+    @Transactional
+    public List<Widget<Long>> getAll() {
+        return StreamSupport
+                .stream(internal.findAll(Sort.by("zIndex")).spliterator(), false)
+                .map(WidgetEntity::toWidget)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Stream<Widget<Long>> getInArea(Area area) {
-        return internal.getInArea(area.left, area.bottom, area.right, area.top).stream().map(WidgetEntity::toWidget);
+    @Transactional
+    public List<Widget<Long>> getInArea(Area area) {
+        return internal
+                .getInArea(area.left, area.bottom, area.right, area.top)
+                .stream()
+                .map(WidgetEntity::toWidget)
+                .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional
     public Optional<Widget<Long>> deleteAndReturnById(Long id) {
         return Optional.ofNullable(internal.removeByIdReturning(id)).map(WidgetEntity::toWidget);
     }
 
     @Override
+    @Transactional
     public boolean deleteById(Long id) {
         return internal.removeById(id) > 0;
     }

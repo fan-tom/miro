@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -51,7 +52,7 @@ public class WidgetsController<ID> {
     }
 
     @GetMapping
-    Stream<Widget<ID>> getAll() {
+    List<Widget<ID>> getAll() {
         return widgetService.getAll();
     }
 
@@ -93,6 +94,9 @@ public class WidgetsController<ID> {
 
     @GetMapping(params = {"left", "right", "bottom", "top"})
     Stream<WidgetResponseDto<ID>> findInArea(@Valid WidgetFindByArea findCriteria) {
-        return widgetService.getInArea(findCriteria.left, findCriteria.right, findCriteria.bottom, findCriteria.top).map(WidgetResponseDto::fromWidget);
+        return widgetService
+                .getInArea(findCriteria.left, findCriteria.right, findCriteria.bottom, findCriteria.top)
+                .stream()
+                .map(WidgetResponseDto::fromWidget);
     }
 }

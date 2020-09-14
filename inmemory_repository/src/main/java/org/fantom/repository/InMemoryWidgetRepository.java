@@ -106,7 +106,7 @@ public class InMemoryWidgetRepository<ID> implements WidgetRepository<ID> {
         }
 
         @Override
-        public Stream<Widget<ID>> add(Iterable<WidgetCreateDto> widgets) throws ZIndexConflictException {
+        public List<Widget<ID>> add(Iterable<WidgetCreateDto> widgets) throws ZIndexConflictException {
             try {
                 return StreamSupport.stream(widgets.spliterator(), false).map(widget -> {
                     try {
@@ -114,7 +114,7 @@ public class InMemoryWidgetRepository<ID> implements WidgetRepository<ID> {
                     } catch (ZIndexConflictException e) {
                         throw new RuntimeException(e);
                     }
-                });
+                }).collect(Collectors.toList());
             } catch (RuntimeException e) {
                 var cause = e.getCause();
                 if (cause instanceof ZIndexConflictException) {
@@ -164,12 +164,12 @@ public class InMemoryWidgetRepository<ID> implements WidgetRepository<ID> {
         }
 
         @Override
-        public Stream<Widget<ID>> getAll() {
-            return widgetsByZIndex.values().stream().map(WidgetDao::toWidget);
+        public List<Widget<ID>> getAll() {
+            return widgetsByZIndex.values().stream().map(WidgetDao::toWidget).collect(Collectors.toList());
         }
 
         @Override
-        public Stream<Widget<ID>> getInArea(Area area) {
+        public List<Widget<ID>> getInArea(Area area) {
             var result = leftIndex.tailMap(area.left).values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
             return Stream.of(new Pair<>(rightIndex, area.right), new Pair<>(topIndex, area.top), new Pair<>(bottomIndex, area.bottom))
                     // avoid synchronization of resulting hashset
@@ -183,7 +183,8 @@ public class InMemoryWidgetRepository<ID> implements WidgetRepository<ID> {
                                 throw new RuntimeException("Sequential reduce executed in parallel");
                             })
                     .stream()
-                    .map(WidgetDao::toWidget);
+                    .map(WidgetDao::toWidget)
+                    .collect(Collectors.toList());
         }
 
         protected WidgetDao<ID> deleteAndReturnByIdInternal(ID id) {
@@ -297,7 +298,7 @@ public class InMemoryWidgetRepository<ID> implements WidgetRepository<ID> {
     }
 
     @Override
-    public Stream<Widget<ID>> add(Iterable<WidgetCreateDto> widgets) throws ZIndexConflictException {
+    public List<Widget<ID>> add(Iterable<WidgetCreateDto> widgets) throws ZIndexConflictException {
         try (var ignored = rwLock.writeLock()) {
             return internal.add(widgets);
         }
@@ -325,14 +326,14 @@ public class InMemoryWidgetRepository<ID> implements WidgetRepository<ID> {
     }
 
     @Override
-    public Stream<Widget<ID>> getAll() {
+    public List<Widget<ID>> getAll() {
         try (var ignored = rwLock.readLock()) {
             return internal.getAll();
         }
     }
 
     @Override
-    public Stream<Widget<ID>> getInArea(Area area) {
+    public List<Widget<ID>> getInArea(Area area) {
         try (var ignored = rwLock.readLock()) {
             return internal.getInArea(area);
         }
