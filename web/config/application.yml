@@ -3,9 +3,11 @@ spring:
 config:
   widgetIdType: string
   repositoryType: memory
+#  repositoryType: db
 ---
 spring:
   profiles: test
 config:
-  widgetIdType: string
-  repositoryType: memory
+#  widgetIdType: string
+#  repositoryType: memory
+  repositoryType: db
